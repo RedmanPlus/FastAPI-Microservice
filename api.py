@@ -43,20 +43,26 @@ def db_setter(db_data: DBCreds):
 	return return_body
 
 @app.get('/get-stats/{date_first}/{date_last}')
-def find_stats(date_first: str, date_last: str):
+def find_stats(date_first: str, date_last: str, order_by: Optional[str] = 'Дата'):
 	queries = db.get_information((datetime.datetime.strptime(date_first, '%Y-%m-%d'), datetime.datetime.strptime(date_last, '%Y-%m-%d')), cred_dict)
 
-	return_body = {}
+	return_list = []
 
 	for query in queries:
-		return_body[query[0]] = {
+		return_list.append({
 			'Дата': query[1],
 			'Показы': query[2],
 			'Клики': query[3],
 			'Цена кликов': query[4],
 			'Средняя стоимость клика': round(float(query[4])/query[3], 2),
 			'Средняя стоимость тысячи показов': round((float(query[4])/query[2])*1000, 2)
-		}
+		})
+
+	return_list = sorted(return_list, key=lambda x: x[order_by])
+
+	return_body = {}
+	for ind, elem in enumerate(return_list):
+		return_body[ind] = elem
 
 	return return_body
 
