@@ -1,3 +1,5 @@
+import datetime
+import uvicorn
 from typing import Optional
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -10,9 +12,10 @@ class DBCreds(BaseModel):
 	dbname: str
 	user: str
 	password: str
-	port: str
+	port: int
 
 class StatEntry(BaseModel):
+	id: int
 	date: datetime.date
 	views: Optional[int] = None
 	clicks: Optional[int] = None
@@ -31,7 +34,7 @@ def db_setter(db_data: DBCreds):
 		'host': db_data.host,
 		'dbname': db_data.dbname,
 		'user': db_data.user,
-		'password': db_data.user,
+		'password': db_data.password,
 		'port': db_data.port
 	}
 
@@ -40,8 +43,8 @@ def db_setter(db_data: DBCreds):
 	return return_body
 
 @app.get('/get-stats/{date_first}/{date_last}')
-def find_stats(date_first: any, date_last: any):
-	queries = db.get_information((date_first, date_last), cred_dict)
+def find_stats(date_first: str, date_last: str):
+	queries = db.get_information((datetime.datetime.strptime(date_first, '%Y-%m-%d'), datetime.datetime.strptime(date_last, '%Y-%m-%d')), cred_dict)
 
 	return_body = {}
 
@@ -51,15 +54,15 @@ def find_stats(date_first: any, date_last: any):
 			'Показы': query[2],
 			'Клики': query[3],
 			'Цена кликов': query[4],
-			'Средняя стоимость клика': round(query[4]/query[3], 2),
-			'Средняя стоимость тысячи показов': round((query[4]/query[2])*1000, 2)
+			'Средняя стоимость клика': round(float(query[4])/query[3], 2),
+			'Средняя стоимость тысячи показов': round((float(query[4])/query[2])*1000, 2)
 		}
 
 	return return_body
 
 @app.post('/add-stats/')
 def add_stats(data: StatEntry):
-	data = (data.date, data.views, data.clicks, data.price)
+	data = (data.id, data.date, data.views, data.clicks, data.price)
 	return_body = db.post_information(data, cred_dict)
 
 	return return_body
@@ -69,3 +72,6 @@ def delete_stats():
 	return_body = db.delete_information(cred_dict)
 
 	return return_body
+
+if __name__ == "__main__":
+	uvicorn.run(app, host='127.0.0.1', port=8000)

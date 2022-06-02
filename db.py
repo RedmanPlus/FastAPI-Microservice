@@ -6,7 +6,13 @@ def connection_establisher(credentials: dict) -> dict:
 	cur = None
 
 	try:
-		conn = psycopg2.connect(**credentials)
+		conn = psycopg2.connect(
+			host=credentials['host'],
+			dbname=credentials['dbname'],
+			user=credentials['user'],
+			password=credentials['password'],
+			port=credentials['port']
+		)
 		cur = conn.cursor()
 
 		cur.execute("""SELECT table_name FROM information_schema.tables
@@ -14,13 +20,11 @@ def connection_establisher(credentials: dict) -> dict:
 
 		if ('stats',) not in cur.fetchall():
 			script = """
-				CREATE TABLE stats (
-					id INT,
+				CREATE TABLE stats (id INT PRIMARY KEY,
 					date_of_event DATE,
 					num_of_views INT,
 					num_of_clicks INT,
-					price_for_click NUMERIC(12,2),
-				);
+					price_for_click NUMERIC(12,2));
 			"""
 			cur.execute(script)
 			conn.commit()
@@ -44,11 +48,17 @@ def get_information(requirements: tuple, credentials: dict) -> list:
 	cur = None
 
 	try:
-		conn = psycopg2.connect(**credentials)
+		conn = psycopg2.connect(
+			host=credentials['host'],
+			dbname=credentials['dbname'],
+			user=credentials['user'],
+			password=credentials['password'],
+			port=credentials['port']
+		)
 		cur = conn.cursor()
 
 		script = """
-				SELECT date_of_event, num_of_views, num_of_clicks, price_for_click FROM stats
+				SELECT id, date_of_event, num_of_views, num_of_clicks, price_for_click FROM stats
 					WHERE date_of_event > %s AND date_of_event < %s;
 			"""
 		cur.execute(script, requirements)
@@ -72,12 +82,18 @@ def post_information(data: list, credentials: dict) -> dict:
 	cur = None
 
 	try:
-		conn = psycopg2.connect(**credentials)
+		conn = psycopg2.connect(
+			host=credentials['host'],
+			dbname=credentials['dbname'],
+			user=credentials['user'],
+			password=credentials['password'],
+			port=credentials['port']
+		)
 		cur = conn.cursor()
 
 		script = """
-				INSERT INTO stats (date_of_event, num_of_views, num_of_clicks, price_for_click)
-					VALUES (%s, %s, %s, %s);
+				INSERT INTO stats (id, date_of_event, num_of_views, num_of_clicks, price_for_click)
+					VALUES (%s, %s, %s, %s, %s);
 			"""
 
 		cur.execute(script, data)
@@ -87,12 +103,12 @@ def post_information(data: list, credentials: dict) -> dict:
 
 	except Exception as error:
 		print(error)
+		return {'Error': 'Nothing was written to the DB'}
 	finally:
 		if cur is not None:
 			cur.close()
 		if conn is not None:
 			conn.close()
-
 
 
 
@@ -102,13 +118,19 @@ def delete_information(credentials: dict) -> dict:
 	cur = None
 
 	try:
-		conn = psycopg2.connect(**credentials)
+		conn = psycopg2.connect(
+			host=credentials['host'],
+			dbname=credentials['dbname'],
+			user=credentials['user'],
+			password=credentials['password'],
+			port=credentials['port']
+		)
 		cur = conn.cursor()
 
 		script = """
 				DELETE FROM stats;
 			"""
-		cur.execute(script, requirements)
+		cur.execute(script)
 		conn.commit()
 
 		return {'Success':'Information deleted'}
